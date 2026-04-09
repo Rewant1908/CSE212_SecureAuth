@@ -531,21 +531,58 @@ if (PAGE === 'dashboard') {
     // Users table
     const { ok: uOk, data: uData } = await api('/users');
     if (uOk && uData.users) {
-      document.getElementById('users-body').innerHTML = uData.users.map(u => `
-        <tr>
-          <td style="color:var(--text-3)">${u.id}</td>
-          <td>${esc(u.username)}</td>
-          <td>${esc(u.email)}</td>
-          <td>${u.role === 'admin' ? 'Administrator' : 'User'}</td>
-          <td>${u.is_locked
-               ? `<div class="badge badge-high"><div class="badge-dot"></div>Locked</div>`
-               : `<div class="badge badge-low"><div class="badge-dot"></div>Active</div>`}</td>
-          <td style="font-variant-numeric:tabular-nums">${u.failed_attempts}</td>
-          <td>${esc(fmtDate(u.created_at))}</td>
-        </tr>
-      `).join('');
+      _adminUsersList = uData.users;
+      renderAdminUsers();
     }
   }
+
+  let _adminUsersList = [];
+
+  function renderAdminUsers() {
+    const query = (document.getElementById('admin-user-search')?.value || '').toLowerCase();
+    const filtered = _adminUsersList.filter(u => 
+      (u.username && u.username.toLowerCase().includes(query)) || 
+      (u.email && u.email.toLowerCase().includes(query))
+    );
+    
+    document.getElementById('users-body').innerHTML = filtered.map(u => `
+      <tr>
+        <td style="color:var(--text-3)">${u.id}</td>
+        <td>${esc(u.username)}</td>
+        <td>${esc(u.email)}</td>
+        <td>${u.role === 'admin' ? 'Administrator' : 'User'}</td>
+        <td>${u.is_locked
+             ? `<div class="badge badge-high"><div class="badge-dot"></div>Locked</div>`
+             : `<div class="badge badge-low"><div class="badge-dot"></div>Active</div>`}</td>
+        <td style="font-variant-numeric:tabular-nums">${u.failed_attempts}</td>
+        <td>${esc(fmtDate(u.created_at))}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm edit-user-action" data-id="${u.id}" style="padding:4px 8px; font-size:12px;">Edit</button>
+        </td>
+      </tr>
+    `).join('');
+
+    if (filtered.length === 0) {
+      document.getElementById('users-body').innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:24px">No users found.</td></tr>`;
+    }
+
+    document.querySelectorAll('.edit-user-action').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = parseInt(e.target.dataset.id);
+        const user = _adminUsersList.find(c => c.id === id);
+        if (user) {
+          document.getElementById('edit-user-id').value = user.id;
+          document.getElementById('edit-username').value = user.username;
+          document.getElementById('edit-role').value = user.role;
+          document.getElementById('edit-password').value = '';
+          clearAlert('admin-edit-alert');
+          document.getElementById('admin-edit-modal').classList.add('open');
+        }
+      });
+    });
+  }
+
+  document.getElementById('admin-user-search')?.addEventListener('input', renderAdminUsers);
 
   function renderDailyChart(daily) {
     const canvas = document.getElementById('daily-chart');
@@ -623,6 +660,72 @@ if (PAGE === 'dashboard') {
     };
     return map[status] ?? `<span style="color:var(--text-3)">${esc(status ?? '—')}</span>`;
   }
+
+  /* ── Change Email ── */
+  document.getElementById('change-email-btn')?.addEventListener('click', async () => {
+    const newEmail = prompt("Enter your new email address:");
+    if (!newEmail) return;
+    
+    if (!newEmail.includes('@')) {
+        showAlert('alert-container', 'Invalid email address.', 'error');
+        return;
+    }
+    
+    const { ok, data } = await api('/me/email', {
+        method: 'PUT',
+        body: JSON.stringify({ email: newEmail })
+    });
+    
+    if (ok) {
+        document.getElementById('info-email').textContent = newEmail;
+        showAlert('alert-container', 'Email successfully updated.', 'success');
+        const user = Store.get('user');
+        if (user) {
+            user.email = newEmail;
+            Store.set('user', user);
+        }
+    } else {
+        showAlert('alert-container', data.error || 'Failed to update email.', 'error');
+    }
+  });
+
+  /* ── Admin Edit User ── */
+  document.getElementById('admin-edit-close-btn')?.addEventListener('click', () => {
+    document.getElementById('admin-edit-modal').classList.remove('open');
+  });
+
+  document.getElementById('admin-edit-modal')?.addEventListener('click', e => {
+    if (e.target === e.currentTarget) e.target.classList.remove('open');
+  });
+
+  document.getElementById('admin-edit-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    clearAlert('admin-edit-alert');
+    
+    const id = document.getElementById('edit-user-id').value;
+    const username = document.getElementById('edit-username').value.trim();
+    const role = document.getElementById('edit-role').value;
+    const password = document.getElementById('edit-password').value;
+    
+    setLoading('admin-edit-save-btn', true);
+    
+    const bodyArgs = { username, role };
+    if (password) bodyArgs.password = password;
+    
+    const { ok, status, data } = await api(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(bodyArgs),
+    });
+    
+    setLoading('admin-edit-save-btn', false);
+    
+    if (ok) {
+      document.getElementById('admin-edit-modal').classList.remove('open');
+      loadAdmin();
+    } else {
+      showAlert('admin-edit-alert', data.error || 'Failed to update user.', 'error');
+    }
+  });
 
   /* ── Add User ── */
   document.getElementById('add-user-form')?.addEventListener('submit', async e => {

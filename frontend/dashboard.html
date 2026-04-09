@@ -115,7 +115,10 @@
           </div>
           <div>
             <div class="info-item-label">Email address</div>
-            <div class="info-item-value" id="info-email">—</div>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <div class="info-item-value" id="info-email">—</div>
+              <button class="btn btn-ghost btn-sm" id="change-email-btn" style="padding:4px 8px; font-size:11px;">Change</button>
+            </div>
           </div>
           <div>
             <div class="info-item-label">Role</div>
@@ -190,21 +193,27 @@
       <div class="section-card" style="margin-bottom:20px">
         <div class="section-label">Add New User</div>
         <form id="add-user-form" style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <input type="text" id="new-username" placeholder="Username" required style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-1);">
-          <input type="email" id="new-email" placeholder="Email" required style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-1);">
-          <input type="password" id="new-password" placeholder="Password" required style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-1);">
-          <select id="new-role" style="padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-1);">
+          <input type="text" id="new-username" class="form-input" placeholder="Username" required style="flex: 1; min-width: 150px; background: var(--bg-surface);">
+          <input type="email" id="new-email" class="form-input" placeholder="Email" required style="flex: 1; min-width: 150px; background: var(--bg-surface);">
+          <input type="password" id="new-password" class="form-input" placeholder="Password" required style="flex: 1; min-width: 150px; background: var(--bg-surface);">
+          <select id="new-role" class="form-input" style="width: auto; background: var(--bg-surface);">
             <option value="user">User</option>
             <option value="admin">Admin</option>
           </select>
-          <button type="submit" class="btn btn-primary" id="add-user-btn">Add User</button>
+          <button type="submit" class="btn btn-primary" id="add-user-btn" style="min-width: 120px;">
+            <div class="btn-spinner" style="display: none;"></div>
+            <span>Add User</span>
+          </button>
         </form>
         <div id="add-user-alert" style="margin-top: 10px;"></div>
       </div>
 
       <div class="section-card">
-        <div class="section-label">All Users</div>
-        <div class="table-wrap">
+        <div class="section-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+          <span>All Users</span>
+          <input type="text" id="admin-user-search" class="form-input" placeholder="Search users..." style="width:200px; padding:6px 12px; font-size:13px; background: var(--bg-surface);">
+        </div>
+        <div class="table-wrap" style="max-height: 350px; overflow-y: auto;">
           <table>
             <thead>
               <tr>
@@ -213,18 +222,56 @@
                 <th>Email</th>
                 <th>Role</th>
                 <th>Status</th>
-                <th>Failed Attempts</th>
+                <th>Failed</th>
                 <th>Created</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="users-body">
-              <tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:24px">Loading users...</td></tr>
+              <tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:24px">Loading users...</td></tr>
             </tbody>
           </table>
         </div>
       </div>
 
     </div>
+  </div>
+</div>
+
+<!-- Admin Edit User Modal -->
+<div id="admin-edit-modal" class="modal-backdrop">
+  <div class="modal" style="width:400px; padding-bottom: 20px;">
+    <div class="modal-header">
+      <h3 class="modal-title" style="margin:20px; font-size: 18px;">Edit User</h3>
+    </div>
+    <form id="admin-edit-form" style="display:flex; flex-direction:column; gap:12px; padding:0 20px;">
+      <input type="hidden" id="edit-user-id">
+      
+      <div>
+        <label class="form-label" style="margin-bottom:4px; display:block;">Username</label>
+        <input type="text" id="edit-username" class="form-input" required style="width:100%; box-sizing:border-box;">
+      </div>
+      
+      <div>
+        <label class="form-label" style="margin-bottom:4px; display:block;">Role</label>
+        <select id="edit-role" class="form-input" style="width:100%; box-sizing:border-box;">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      
+      <div>
+        <label class="form-label" style="margin-bottom:4px; display:block;">New Password (leave blank to keep current)</label>
+        <input type="password" id="edit-password" class="form-input" placeholder="••••••••" style="width:100%; box-sizing:border-box;">
+      </div>
+      
+      <div id="admin-edit-alert" style="margin-top:4px;"></div>
+      
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button type="submit" class="btn btn-primary" id="admin-edit-save-btn" style="flex:1;">Save</button>
+        <button type="button" class="btn btn-secondary" id="admin-edit-close-btn" style="flex:1;">Cancel</button>
+      </div>
+    </form>
   </div>
 </div>
 

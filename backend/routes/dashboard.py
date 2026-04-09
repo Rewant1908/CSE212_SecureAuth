@@ -55,6 +55,28 @@ def me():
     return jsonify({'status': 'success', 'user': user.to_dict()}), 200
 
 
+@dash_bp.route('/me/email', methods=['PUT'])
+@require_auth
+def update_email():
+    data = request.get_json()
+    email = data.get('email')
+    
+    if not email or '@' not in email:
+        return jsonify({'error': 'Invalid email address.'}), 400
+
+    conn = get_connection()
+    try:
+        cur = execute(conn, "SELECT id FROM users WHERE email = ? AND id != ?", (email, request.user_id))
+        if cur.fetchone():
+            return jsonify({'error': 'Email is already in use.'}), 409
+
+        execute(conn, "UPDATE users SET email = ? WHERE id = ?", (email, request.user_id))
+        conn.commit()
+        return jsonify({'status': 'success', 'message': 'Email updated.'}), 200
+    finally:
+        conn.close()
+
+
 @dash_bp.route('/history', methods=['GET'])
 @require_auth
 def history():
@@ -184,5 +206,50 @@ def list_users():
                 if k in u and u[k] is not None:
                     u[k] = str(u[k])
         return jsonify({'status': 'success', 'users': users}), 200
+    finally:
+        conn.close()
+
+
+@dash_bp.route('/users/<int:user_id>', methods=['PUT'])
+@require_admin
+def edit_user(user_id):
+    data = request.get_json()
+    username = data.get('username')
+    role = data.get('role')
+    password = data.get('password')
+
+    conn = get_connection()
+    try:
+        if username:
+            cur = execute(conn, "SELECT id FROM users WHERE username = ? AND id != ?", (username, user_id))
+            if cur.fetchone():
+                return jsonify({'error': 'Username is already taken.'}), 409
+        
+        updates = []
+        params = []
+        if username:
+            updates.append("username = ?")
+            params.append(username)
+        if role:
+            updates.append("role = ?")
+            params.append(role)
+        if password:
+            import bcrypt
+            hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
+            updates.append("password_hash = ?")
+            params.append(hashed)
+
+        if not updates:
+            return jsonify({'error': 'No fields to update.'}), 400
+
+        params.append(user_id)
+        execute(conn, f"UPDATE users SET {', '.join(updates)} WHERE id = ?", tuple(params))
+        
+        if password:
+            # Revoke refresh tokens to force logout
+            execute(conn, "UPDATE refresh_tokens SET revoked = 1 WHERE user_id = ?", (user_id,))
+
+        conn.commit()
+        return jsonify({'status': 'success', 'message': 'User updated.'}), 200
     finally:
         conn.close()
