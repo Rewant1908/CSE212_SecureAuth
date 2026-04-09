@@ -718,6 +718,38 @@ After a few successful logins from the same device and location, the history bui
 
 ---
 
+## Appendix - Local Demo Calibration Notes
+
+Local testing on `http://localhost:5000` does not perfectly match the ensemble's synthetic "normal login" baseline. This matters when interpreting the demo accounts, especially `alice` and `bob`.
+
+### Why `alice` and `bob` can score unexpectedly high
+
+| Factor | Current behaviour | Effect on local score |
+|---|---|---|
+| `127.0.0.1` and `vpn_detected` | Localhost is treated as low IP risk, but it is not explicitly exempted by the VPN heuristic | `vpn_detected` can become `1`, which pushes the score upward |
+| `account_age_days` | Seeded demo users are effectively brand new | The ensemble was trained mostly on older "normal" accounts, so new accounts look more anomalous |
+| `time_since_last_login` and `login_velocity` | Repeated retries happen within minutes or seconds during testing | Ordinary demo retries can look anomalous relative to the training distribution |
+| `failed_login_ratio` feedback | Blocked attempts are written back into login history and reused in later scoring | Once a few local attempts are blocked, later attempts score even higher |
+
+### Practical interpretation
+
+- `alice` and `bob` scoring in the `76-90` range on localhost does not mean the password or role logic is broken.
+- It usually means the risk model's "normal login" baseline does not match current local demo traffic.
+- The more you retry after blocked attempts, the more the saved history can bias future scores upward.
+
+### How to read the demo accounts
+
+- Treat `charlie` as the intentionally high-risk demo account.
+- Treat `alice` and `admin` as the intended low-risk profiles, while remembering that localhost calibration can temporarily push them into `MEDIUM` or `HIGH`.
+- Treat `bob` as a middle-profile user whose local score is especially sensitive to recent retry history.
+
+### If you need a clean local demo again
+
+- Reset the local SQLite database so the seeded history starts fresh.
+- Clear cached model files in `config/models/` so the ensemble reloads from a clean state on next startup.
+
+---
+
 ## Quick Reference
 
 ```
