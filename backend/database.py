@@ -7,11 +7,12 @@ Fallback: SQLite for local dev when DB_TYPE=sqlite.
 import os
 import sqlite3
 import logging
-import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta
+import random
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', 'config', '.env'))
+_backend_dir = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(_backend_dir, '../config/.env'), override=True)
 
 logger = logging.getLogger(__name__)
 
