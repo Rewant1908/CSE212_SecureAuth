@@ -140,6 +140,36 @@ def analytics():
         conn.close()
 
 
+@dash_bp.route('/users', methods=['POST'])
+@require_admin
+def create_user():
+    data = request.get_json()
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+    role = data.get('role', 'user')
+
+    if not username or not email or not password:
+        return jsonify({'error': 'Username, email, and password are required.'}), 400
+
+    conn = get_connection()
+    try:
+        cur = execute(conn, "SELECT id FROM users WHERE username = ? OR email = ?", (username, email))
+        if cur.fetchone():
+            return jsonify({'error': 'User with this username or email already exists.'}), 409
+
+        import bcrypt
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
+        
+        execute(conn,
+            "INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)",
+            (username, email, hashed_password, role))
+        conn.commit()
+        return jsonify({'status': 'success', 'message': 'User created successfully.'}), 201
+    finally:
+        conn.close()
+
+
 @dash_bp.route('/users', methods=['GET'])
 @require_admin
 def list_users():

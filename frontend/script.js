@@ -624,6 +624,34 @@ if (PAGE === 'dashboard') {
     return map[status] ?? `<span style="color:var(--text-3)">${esc(status ?? '—')}</span>`;
   }
 
+  /* ── Add User ── */
+  document.getElementById('add-user-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    clearAlert('add-user-alert');
+    
+    const username = document.getElementById('new-username').value.trim();
+    const email = document.getElementById('new-email').value.trim();
+    const password = document.getElementById('new-password').value;
+    const role = document.getElementById('new-role').value;
+    
+    setLoading('add-user-btn', true);
+    
+    const { ok, status, data } = await api('/users', {
+      method: 'POST',
+      body: JSON.stringify({ username, email, password, role }),
+    });
+    
+    setLoading('add-user-btn', false);
+    
+    if (ok) {
+      showAlert('add-user-alert', 'User added successfully!', 'success');
+      document.getElementById('add-user-form').reset();
+      loadAdmin(); // Reload the users table
+    } else {
+      showAlert('add-user-alert', data.error || 'Failed to add user.', 'error');
+    }
+  });
+
   // Auto-refresh every 12 min
   setInterval(tryRefresh, 12 * 60 * 1000);
 

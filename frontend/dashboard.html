@@ -187,6 +187,21 @@
         </div>
       </div>
 
+      <div class="section-card" style="margin-bottom:20px">
+        <div class="section-label">Add New User</div>
+        <form id="add-user-form" style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <input type="text" id="new-username" placeholder="Username" required style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-1);">
+          <input type="email" id="new-email" placeholder="Email" required style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-1);">
+          <input type="password" id="new-password" placeholder="Password" required style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-1);">
+          <select id="new-role" style="padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-1);">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button type="submit" class="btn btn-primary" id="add-user-btn">Add User</button>
+        </form>
+        <div id="add-user-alert" style="margin-top: 10px;"></div>
+      </div>
+
       <div class="section-card">
         <div class="section-label">All Users</div>
         <div class="table-wrap">
