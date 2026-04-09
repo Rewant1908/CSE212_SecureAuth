@@ -19,8 +19,19 @@ DB_TYPE = os.getenv('DB_TYPE', 'sqlite')      # 'mysql' | 'sqlite'
 DB_PATH = os.getenv('DB_PATH', 'secureauth.db')
 
 _backend_dir = os.path.dirname(os.path.abspath(__file__))
-if not os.path.isabs(DB_PATH):
-    DB_PATH = os.path.join(_backend_dir, DB_PATH)
+
+
+def _resolve_db_path(db_path: str) -> str:
+    if os.path.isabs(db_path):
+        return db_path
+
+    if os.getenv('VERCEL') == '1' or os.getenv('VERCEL_ENV'):
+        return os.path.join('/tmp', os.path.basename(db_path))
+
+    return os.path.join(_backend_dir, db_path)
+
+
+DB_PATH = _resolve_db_path(DB_PATH)
 
 
 # ─────────────────────────────────────────────────────────────────

@@ -4,7 +4,9 @@
  */
 
 /* ── Config ── */
-const API = 'http://localhost:5000/api';
+const API = location.protocol === 'file:'
+  ? 'http://localhost:5000/api'
+  : `${location.origin}/api`;
 
 /* ── Storage ── */
 const Store = {
