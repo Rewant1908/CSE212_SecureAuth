@@ -152,7 +152,7 @@ if (PAGE === 'login') {
   function openResultModal(data) {
     const score  = data.risk_score  ?? 0;
     const level  = data.risk_level  ?? 'LOW';
-    const status = data.status      ?? 'blocked';
+    const status = data.status      ?? (data.error ? 'blocked' : 'success');
     const conf   = data.confidence  ?? 0;
     const expl   = data.explanation ?? data.error ?? '—';
 
