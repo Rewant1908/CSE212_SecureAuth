@@ -341,7 +341,16 @@ def _save_ai_metrics(user_id, feature_vec, result, risk_score, risk_level, confi
 
 
 def _calibrate_demo_result(user, feature_vec, result):
+    fmap = dict(zip(FEATURE_NAMES, feature_vec.flatten()))
+
     if user.username not in _DEMO_USERS or not str(user.email).endswith('@demo.com'):
+        # Cap risk at MEDIUM for brand new real accounts (instead of blocking them outright)
+        if fmap.get('account_age_days', 10) < 1:
+            if result['risk_score'] >= 70:
+                result['risk_score'] = 55.0
+                result['risk_level'] = 'MEDIUM'
+                result['confidence'] = 0.85
+                result['explanation'] = "Medium Risk\n\nSummary: This is a brand new account attempting its first logins from an unverified device. Requiring MFA verification to establish trust."
         return result
 
     fmap = dict(zip(FEATURE_NAMES, feature_vec.flatten()))

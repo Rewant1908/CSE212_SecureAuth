@@ -15,7 +15,7 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', 'config', 
 
 logger = logging.getLogger(__name__)
 
-DB_TYPE = os.getenv('DB_TYPE', 'sqlite')      # 'mysql' | 'sqlite'
+DB_TYPE = os.getenv('DB_TYPE', 'sqlite')      # 'mysql' | 'postgres' | 'sqlite'
 DB_PATH = os.getenv('DB_PATH', 'secureauth.db')
 
 _backend_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,7 +25,9 @@ def _resolve_db_path(db_path: str) -> str:
     if os.path.isabs(db_path):
         return db_path
 
-    if os.getenv('VERCEL') == '1' or os.getenv('VERCEL_ENV'):
+    # Only use /tmp/ in actual Vercel cloud environments.
+    # Avoid VERCEL=1 since `vercel dev` locally will cause disappearing data.
+    if os.getenv('VERCEL_ENV') in ['production', 'preview']:
         return os.path.join('/tmp', os.path.basename(db_path))
 
     return os.path.join(_backend_dir, db_path)
@@ -34,17 +36,16 @@ def _resolve_db_path(db_path: str) -> str:
 DB_PATH = _resolve_db_path(DB_PATH)
 
 
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Connection
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def get_connection():
-    """Return a database connection.
-    DB_TYPE=mysql  Ã¢â€ â€™ PyMySQL (requires MySQL server)
-    DB_TYPE=sqlite Ã¢â€ â€™ SQLite (default, no server needed)
-    """
+    """Return a database connection."""
     if DB_TYPE == 'mysql':
         return _mysql_connection()
+    if DB_TYPE == 'postgres':
+        return _postgres_connection()
     return _sqlite_connection()
 
 
@@ -73,6 +74,29 @@ def _mysql_connection():
         logger.error("MySQL connection failed: %s", exc)
         raise
 
+def _postgres_connection():
+    """Open a Psycopg2 connection with RealDictCursor."""
+    try:
+        import psycopg2
+        import psycopg2.extras
+        conn = psycopg2.connect(
+            host     = os.getenv('PG_HOST', 'localhost'),
+            port     = int(os.getenv('PG_PORT', 5432)),
+            dbname   = os.getenv('PG_NAME', 'postgres'),
+            user     = os.getenv('PG_USER', 'postgres'),
+            password = os.getenv('PG_PASSWORD', ''),
+            connect_timeout = 10,
+            cursor_factory = psycopg2.extras.RealDictCursor
+        )
+        logger.debug("PostgreSQL connection established.")
+        return conn
+    except ImportError:
+        logger.error("psycopg2-binary not installed. Run: pip install psycopg2-binary")
+        raise
+    except Exception as exc:
+        logger.error("PostgreSQL connection failed: %s", exc)
+        raise
+
 
 def _sqlite_connection():
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
@@ -82,9 +106,9 @@ def _sqlite_connection():
     return conn
 
 
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-# Schema Ã¢â‚¬â€œ MySQL dialect (also valid for SQLite with minor notes)
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Schema – MySQL dialect (also valid for SQLite with minor notes)
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # MySQL DDL statements (executed one at a time)
 MYSQL_SCHEMA = [
@@ -163,6 +187,79 @@ MYSQL_SCHEMA = [
     """,
 ]
 
+# PostgreSQL DDL statements
+POSTGRES_SCHEMA = [
+    """
+    CREATE TABLE IF NOT EXISTS users (
+        id              SERIAL          PRIMARY KEY,
+        username        VARCHAR(80)     NOT NULL UNIQUE,
+        email           VARCHAR(255)    NOT NULL UNIQUE,
+        password_hash   VARCHAR(255)    NOT NULL,
+        role            VARCHAR(20)     NOT NULL DEFAULT 'user',
+        is_locked       BOOLEAN         NOT NULL DEFAULT FALSE,
+        failed_attempts INT             NOT NULL DEFAULT 0,
+        locked_until    TIMESTAMP       NULL,
+        created_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS login_history (
+        id          SERIAL          PRIMARY KEY,
+        user_id     INT             NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        ip_address  VARCHAR(45)     NULL,
+        device_hash VARCHAR(64)     NULL,
+        location    VARCHAR(255)    NULL,
+        risk_score  FLOAT           NULL,
+        risk_level  VARCHAR(10)     NULL,
+        status      VARCHAR(20)     NULL,
+        explanation TEXT            NULL,
+        timestamp   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS mfa_tokens (
+        id          SERIAL          PRIMARY KEY,
+        user_id     INT             NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        otp_hash    VARCHAR(255)    NOT NULL,
+        mfa_token   VARCHAR(64)     NOT NULL UNIQUE,
+        expires_at  TIMESTAMP       NOT NULL,
+        used        BOOLEAN         NOT NULL DEFAULT FALSE,
+        created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS refresh_tokens (
+        id          SERIAL          PRIMARY KEY,
+        user_id     INT             NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash  VARCHAR(64)     NOT NULL UNIQUE,
+        expires_at  TIMESTAMP       NOT NULL,
+        revoked     BOOLEAN         NOT NULL DEFAULT FALSE,
+        created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS ai_metrics (
+        id              SERIAL          PRIMARY KEY,
+        user_id         INT             NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        feature_vector  TEXT            NULL,
+        model_votes     TEXT            NULL,
+        risk_score      FLOAT           NULL,
+        risk_level      VARCHAR(10)     NULL,
+        confidence      FLOAT           NULL,
+        explanation     TEXT            NULL,
+        timestamp       TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS rate_limit_log (
+        id          SERIAL          PRIMARY KEY,
+        ip_address  VARCHAR(45)     NOT NULL,
+        endpoint    VARCHAR(100)    NULL,
+        timestamp   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+]
+
 # SQLite fallback schema (single executescript call)
 SQLITE_SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -225,9 +322,9 @@ CREATE TABLE IF NOT EXISTS rate_limit_log (
 """
 
 
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 # init_db
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def init_db():
     """Create all tables if they don't exist."""
@@ -241,6 +338,14 @@ def init_db():
                     cur.execute(stmt)
             conn.commit()
             logger.info("MySQL schema initialised.")
+        elif DB_TYPE == 'postgres':
+            cur = conn.cursor()
+            for stmt in POSTGRES_SCHEMA:
+                stmt = stmt.strip()
+                if stmt:
+                    cur.execute(stmt)
+            conn.commit()
+            logger.info("PostgreSQL schema initialised.")
         else:
             conn.executescript(SQLITE_SCHEMA)
             conn.commit()
@@ -249,35 +354,34 @@ def init_db():
         conn.close()
 
 
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Placeholder / query helpers
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def ph():
     """Return the correct placeholder for the active DB driver.
     MySQL uses %s, SQLite uses ?.
     """
-    return '%s' if DB_TYPE == 'mysql' else '?'
+    return '%s' if DB_TYPE in ('mysql', 'postgres') else '?'
 
 
-def execute(conn, sql: str, params=()):
-    """Execute a single statement with correct placeholders."""
-    sql = _adapt_sql(sql)
-    cur = conn.cursor()
-    cur.execute(sql, params)
-    return cur
+def execute(conn, query, params=()):
+    try:
+        # Simple placeholder translation for PyMySQL and PostgreSQL compatibility
+        if DB_TYPE in ('mysql', 'postgres') and '?' in query:
+            query = query.replace('?', '%s')
+        
+        cur = conn.cursor()
+        cur.execute(query, params)
+        return cur
+    except Exception as exc:
+        logger.error("Query execution failed: %s", exc)
+        raise
 
 
-def _adapt_sql(sql: str) -> str:
-    """Convert ? placeholders to %s for MySQL."""
-    if DB_TYPE == 'mysql':
-        return sql.replace('?', '%s')
-    return sql
-
-
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-# Row Ã¢â€ â€™ dict helper
-# Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Row – dict helper
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def dict_from_row(row) -> dict | None:
     """Normalise a row to a plain dict regardless of driver."""
