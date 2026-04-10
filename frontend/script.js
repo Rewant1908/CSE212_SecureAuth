@@ -5,7 +5,7 @@
 
 /* ── Config ── */
 const API = location.protocol === 'file:'
-  ? 'http://localhost:5000/api'
+  ? 'http://localhost:5001/api'
   : `${location.origin}/api`;
 
 /* ── Storage ── */
@@ -312,7 +312,15 @@ if (PAGE === 'mfa') {
     } else {
       countEl.textContent = fmt(secsLeft);
       if (secsLeft <= 60) timerEl.classList.add('expired');
-      if (secsLeft <= (5 * 60 - 30)) resendBtn.disabled = false;
+      
+      const resendCooldown = secsLeft - (5 * 60 - 30);
+      if (resendCooldown <= 0) {
+        resendBtn.disabled = false;
+        resendBtn.textContent = 'Resend Code';
+      } else {
+        resendBtn.disabled = true;
+        resendBtn.textContent = `Resend Code (${resendCooldown}s)`;
+      }
     }
   }, 1000);
 
@@ -363,6 +371,7 @@ if (PAGE === 'mfa') {
       timerEl.classList.remove('expired');
       countEl.textContent = fmt(secsLeft);
       resendBtn.disabled  = true;
+      resendBtn.textContent = 'Resend Code (30s)';
     } else {
       showAlert('alert-container', data.error || 'Failed to resend code.', 'error');
     }
@@ -472,8 +481,9 @@ if (PAGE === 'dashboard') {
 
     const confEl = document.getElementById('stat-confidence');
     if (confEl) {
-      animNum(confEl, Math.round(conf * 100));
-      confEl.textContent += '%';
+      const confPct = Math.round(conf * 100);
+      animNum(confEl, confPct);
+      setTimeout(() => { if (confEl.textContent && !confEl.textContent.includes('%')) confEl.textContent += '%'; }, 950);
     }
 
     // Big score

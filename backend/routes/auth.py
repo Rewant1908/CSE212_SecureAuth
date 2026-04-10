@@ -287,8 +287,7 @@ def resend_otp():
     # Find user from existing (unused) MFA session
     conn = get_connection()
     try:
-        cur = conn.cursor()
-        cur.execute(
+        cur = execute(conn,
             "SELECT user_id FROM mfa_tokens WHERE mfa_token=?",
             (mfa_token,)
         )
@@ -299,7 +298,7 @@ def resend_otp():
     if not row:
         return jsonify({'error': 'Invalid MFA session.'}), 400
 
-    user_id = row[0]
+    user_id = dict_from_row(row)['user_id'] if row else None
     user    = User.find_by_id(user_id)
     if not user:
         return jsonify({'error': 'User not found.'}), 404
@@ -344,13 +343,29 @@ def _calibrate_demo_result(user, feature_vec, result):
     fmap = dict(zip(FEATURE_NAMES, feature_vec.flatten()))
 
     if user.username not in _DEMO_USERS or not str(user.email).endswith('@demo.com'):
-        # Cap risk at MEDIUM for brand new real accounts (instead of blocking them outright)
-        if fmap.get('account_age_days', 10) < 1:
-            if result['risk_score'] >= 70:
-                result['risk_score'] = 55.0
-                result['risk_level'] = 'MEDIUM'
-                result['confidence'] = 0.85
-                result['explanation'] = "Medium Risk\n\nSummary: This is a brand new account attempting its first logins from an unverified device. Requiring MFA verification to establish trust."
+        # New accounts have no history — the AI can return ~0 (looks like normal training data)
+        # or very high (unknown pattern). In both cases, always require MFA for the first login.
+        account_age = fmap.get('account_age_days', 10)
+        if account_age < 7:
+            # Force MEDIUM so MFA is required for any account younger than 7 days
+            raw = result['risk_score']
+            # Clamp between 45 and 65 — clearly MEDIUM, closer to 50 for typical new users
+            safe_score = max(45.0, min(65.0, raw if raw >= 45 else 52.0))
+            result['risk_score'] = safe_score
+            result['risk_level'] = 'MEDIUM'
+            result['confidence'] = 0.85
+            result['explanation'] = (
+                "Medium Risk\n\nSummary: This is a relatively new account with limited login history. "
+                "MFA verification is required to establish device and location trust.\n\n"
+                "Analysis:\n"
+                "  - New account age requires additional verification\n"
+                "  - No established device fingerprint on record\n"
+                "  - Requiring MFA to confirm account ownership"
+            )
+        elif result['risk_score'] < 1.0:
+            # Older account but AI returned near-zero — give it a low-but-nonzero floor
+            result['risk_score'] = 15.0
+            result['risk_level'] = 'LOW'
         return result
 
     fmap = dict(zip(FEATURE_NAMES, feature_vec.flatten()))

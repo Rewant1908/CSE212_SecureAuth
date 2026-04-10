@@ -68,7 +68,7 @@ def create_app() -> Flask:
         resources={
             r'/api/*': {
                 'origins': ['http://localhost:*', 'http://127.0.0.1:*', 'null', '*'],
-                'methods': ['GET', 'POST', 'OPTIONS'],
+                'methods': ['GET', 'POST', 'PUT', 'OPTIONS'],
                 'allow_headers': ['Content-Type', 'Authorization'],
             }
         },

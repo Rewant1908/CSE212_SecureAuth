@@ -86,8 +86,8 @@ class User:
                 until = (datetime.utcnow() + timedelta(minutes=LOCKOUT_MINS)) \
                             .strftime('%Y-%m-%d %H:%M:%S')
                 execute(conn,
-                    "UPDATE users SET failed_attempts=?, is_locked=TRUE, locked_until=? WHERE id=?",
-                    (self.failed_attempts, until, self.id))
+                    "UPDATE users SET failed_attempts=?, is_locked=?, locked_until=? WHERE id=?",
+                    (self.failed_attempts, True, until, self.id))
                 self.is_locked    = True
                 self.locked_until = until
                 logger.warning("User '%s' locked until %s", self.username, until)
@@ -103,8 +103,8 @@ class User:
         conn = get_connection()
         try:
             execute(conn,
-                "UPDATE users SET failed_attempts=0, is_locked=FALSE, locked_until=NULL WHERE id=?",
-                (self.id,))
+                "UPDATE users SET failed_attempts=0, is_locked=?, locked_until=NULL WHERE id=?",
+                (False, self.id))
             conn.commit()
             self.failed_attempts = 0
             self.is_locked       = False
@@ -115,8 +115,8 @@ class User:
         conn = get_connection()
         try:
             execute(conn,
-                "UPDATE users SET is_locked=FALSE, locked_until=NULL, failed_attempts=0 WHERE id=?",
-                (self.id,))
+                "UPDATE users SET is_locked=?, locked_until=NULL, failed_attempts=0 WHERE id=?",
+                (False, self.id))
             conn.commit()
             self.is_locked = False
         finally:

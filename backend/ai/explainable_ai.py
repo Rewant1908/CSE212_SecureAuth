@@ -218,7 +218,12 @@ def _rank_features(fmap: dict, weights: dict):
         value = fmap.get(feature, 0)
         risky_flag = _is_risky(feature, value)
         key = 'high' if risky_flag else 'low'
-        text = template[key].format(val=value)
+        
+        # Override the template for time_since_last_login if this is a brand new account
+        if feature == 'time_since_last_login' and fmap.get('account_age_days', 10) < 7:
+             text = 'This is the initial login period for this account'
+        else:
+             text = template[key].format(val=value)
 
         if risky_flag:
             risky.append((weight, 'ALERT', text))

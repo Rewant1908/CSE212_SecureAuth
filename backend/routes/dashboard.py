@@ -247,7 +247,7 @@ def edit_user(user_id):
         
         if password:
             # Revoke refresh tokens to force logout
-            execute(conn, "UPDATE refresh_tokens SET revoked = TRUE WHERE user_id = ?", (user_id,))
+            execute(conn, "UPDATE refresh_tokens SET revoked = ? WHERE user_id = ?", (True, user_id))
 
         conn.commit()
         return jsonify({'status': 'success', 'message': 'User updated.'}), 200

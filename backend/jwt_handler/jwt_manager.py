@@ -8,6 +8,7 @@ import jwt
 import uuid
 import logging
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', 'config', '.env'))
@@ -42,7 +43,7 @@ class JWTManager:
         return jwt.encode(payload, SECRET, algorithm=ALGORITHM), exp
 
     @staticmethod
-    def decode_token(token: str) -> dict | None:
+    def decode_token(token: str) -> Optional[dict]:
         try:
             return jwt.decode(token, SECRET, algorithms=[ALGORITHM])
         except jwt.ExpiredSignatureError:
@@ -51,12 +52,12 @@ class JWTManager:
             return None
 
     @staticmethod
-    def verify_access_token(token: str) -> dict | None:
+    def verify_access_token(token: str) -> Optional[dict]:
         p = JWTManager.decode_token(token)
         return p if p and p.get('type') == 'access' else None
 
     @staticmethod
-    def verify_refresh_token(token: str) -> dict | None:
+    def verify_refresh_token(token: str) -> Optional[dict]:
         p = JWTManager.decode_token(token)
         return p if p and p.get('type') == 'refresh' else None
 
@@ -87,8 +88,8 @@ def revoke_refresh_token(token: str):
     conn = get_connection()
     try:
         execute(conn,
-            "UPDATE refresh_tokens SET revoked=1 WHERE token_hash=?",
-            (hash_token(token),))
+            "UPDATE refresh_tokens SET revoked=? WHERE token_hash=?",
+            (True, hash_token(token),))
         conn.commit()
     finally:
         conn.close()

@@ -6,8 +6,10 @@ Fallback: SQLite for local dev when DB_TYPE=sqlite.
 
 import os
 import sqlite3
+import hashlib
 import logging
 from datetime import datetime, timedelta
+from typing import Optional
 import random
 from dotenv import load_dotenv
 
@@ -89,6 +91,7 @@ def _postgres_connection():
             connect_timeout = 10,
             cursor_factory = psycopg2.extras.RealDictCursor
         )
+        conn.autocommit = False
         logger.debug("PostgreSQL connection established.")
         return conn
     except ImportError:
@@ -377,6 +380,11 @@ def execute(conn, query, params=()):
         return cur
     except Exception as exc:
         logger.error("Query execution failed: %s", exc)
+        # Roll back the aborted transaction so the connection remains usable
+        try:
+            conn.rollback()
+        except Exception:
+            pass
         raise
 
 
@@ -384,7 +392,7 @@ def execute(conn, query, params=()):
 # Row – dict helper
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-def dict_from_row(row) -> dict | None:
+def dict_from_row(row) -> Optional[dict]:
     """Normalise a row to a plain dict regardless of driver."""
     if row is None:
         return None

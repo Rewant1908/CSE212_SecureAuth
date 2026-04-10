@@ -6,7 +6,7 @@ import os, sys, uuid, bcrypt, logging, random, string
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', 'config', '.env'))
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', 'config', '.env'), override=True)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from database import get_connection, dict_from_row, execute
@@ -29,7 +29,7 @@ def create_mfa_session(user_id: int, risk_info: dict) -> tuple:
                     .strftime('%Y-%m-%d %H:%M:%S')
     conn = get_connection()
     try:
-        execute(conn, "UPDATE mfa_tokens SET used=1 WHERE user_id=? AND used=0", (user_id,))
+        execute(conn, "UPDATE mfa_tokens SET used=? WHERE user_id=? AND used=?", (True, user_id, False))
         execute(conn,
             "INSERT INTO mfa_tokens (user_id, otp_hash, mfa_token, expires_at) VALUES (?,?,?,?)",
             (user_id, otp_hash, mfa_token, expires))
@@ -43,19 +43,19 @@ def verify_otp(mfa_token: str, otp_input: str) -> tuple:
     conn = get_connection()
     try:
         cur = execute(conn,
-            "SELECT * FROM mfa_tokens WHERE mfa_token=? AND used=0", (mfa_token,))
+            "SELECT * FROM mfa_tokens WHERE mfa_token=? AND used=?", (mfa_token, False))
         row = cur.fetchone()
         if not row:
             return False, "Invalid or expired MFA session.", None
         data    = dict_from_row(row)
         expires = datetime.strptime(str(data['expires_at'])[:19], '%Y-%m-%d %H:%M:%S')
         if datetime.utcnow() > expires:
-            execute(conn, "UPDATE mfa_tokens SET used=1 WHERE id=?", (data['id'],))
+            execute(conn, "UPDATE mfa_tokens SET used=? WHERE id=?", (True, data['id'],))
             conn.commit()
             return False, "OTP has expired. Please request a new one.", None
         if not bcrypt.checkpw(otp_input.encode(), data['otp_hash'].encode()):
             return False, "Incorrect OTP.", None
-        execute(conn, "UPDATE mfa_tokens SET used=1 WHERE id=?", (data['id'],))
+        execute(conn, "UPDATE mfa_tokens SET used=? WHERE id=?", (True, data['id'],))
         conn.commit()
         return True, "OTP verified.", data['user_id']
     finally:
@@ -80,6 +80,12 @@ def send_otp_email(to_email: str, username: str, otp: str) -> bool:
         return True
     except Exception as exc:
         logger.error("Failed to send OTP email: %s", exc)
+        logger.warning(
+            "\n" + "="*50 + "\n" +
+            "  FALLBACK: Resend API rejected the email.\n" +
+            "  Intercepted OTP for %s: >> %s <<\n" % (to_email, otp) +
+            "=" * 50 + "\n"
+        )
         return False
 
 
