@@ -4,9 +4,7 @@
  */
 
 /* ── Config ── */
-const API = location.protocol === 'file:'
-  ? 'http://localhost:5001/api'
-  : `${location.origin}/api`;
+const API = 'https://cse-212-secure-auth.vercel.app/api';
 
 /* ── Storage ── */
 const Store = {
